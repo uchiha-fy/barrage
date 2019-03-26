@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Barrage</title>
+	<style>
+		html,body,.container{
+			width:100%;
+			height:100%;
+			overflow:hidden;
+			margin:0;padding:0;
+		}
+		canvas{
+			margin:0;padding:0;
+		}
+	</style>
+</head>
+<body>
+	<div class="container" id="container"></div>
+	<script>
+		function Canvas(opts){
+			var self=this;
+			this.el=document.createElement('canvas');
+			this.ctx=self.el.getContext('2d');
+			this.timer=null;
+			this.clearTimer=function(){
+				clearInterval(self.timer);
+				self.timer=null;
+				return self;
+			};
+			this.clear=function(deep){
+				self.ctx.fillStyle=deep?'#000':'rgba(0,0,0,.05)';
+				self.ctx.fillRect(0,0,self.el.width,self.el.height);
+				return self;
+			};
+			this.font={
+				size:0,
+				color:'#0f0',
+				angle:0,
+				set:function(font,left,top){
+					font=(''+font).charAt();
+					self.ctx.fillStyle=this.color;
+					self.ctx.font=this.size+"px Arial";
+					self.ctx.textAlign="center";
+					self.ctx.textBaseline="middle";
+					self.ctx.save();
+					self.ctx.translate(left,top);
+					self.ctx.rotate(this.angle);
+					self.ctx.fillText(font,0,0,this.size);
+					self.ctx.restore();
+					return this;
+				},
+				slide:function(fonts,opts){
+					var fonts=(''+fonts).split('');
+					if(fonts.length){
+						var idx=-1,
+							step=10,
+							left=self.el.width/2,
+							top=self.el.height+this.size/2,
+							_this=this;
+						self.clearTimer().timer=setInterval(function(){
+							idx++;
+							self.clear(true);
+							fonts.forEach(function(item,index){
+								_this.set(item,left,top+index*_this.size-step*idx);
+							});
+							if(top+fonts.length*_this.size-step*idx<=_this.size/2)
+								opts.repeat?(idx=-1):(self.clearTimer());
+						},25);
+					}
+					return this;
+				},
+				init:function(width,height){
+					width<height&&(this.angle=90*Math.PI/180);
+					this.size=Math.min(width,height)*.6;
+					return this;
+				}
+			};
+			this.ready=function(callback){
+				var idx=-1,
+					time=3;
+				self.clearTimer().timer=setInterval(function(){
+					self.clear();
+					if(++idx%40===0)
+						time--<=0?(self.clearTimer().clear(true),callback&&callback()):self.font.set(time+1,self.el.width/2,self.el.height/2);
+				},25);
+			};
+			this.isInit=false;
+			this.init=function(){
+				if(opts.container){
+					var container=opts.container;
+					self.el.width=container.offsetWidth;
+					self.el.height=container.offsetHeight;
+					container.appendChild(self.el);
+					self.font.init(self.el.width,self.el.height);
+					self.init=true;
+					self.ready(function(){
+						self.font.slide(opts.fonts,{
+							repeat:opts.repeat
+						});
+					});
+				}
+				return self;
+			};
+			return self.init();
+		}
+		var c=new Canvas({
+			container:document.getElementById('container'),
+			fonts:'因为我不知道,下一辈子还是否能遇见你,所以我今生才会那么努力把最好的都给你',
+			repeat:!0
+		});
+	</script>
+</body>
+</html>
