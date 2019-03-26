@@ -3,6 +3,8 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Barrage</title>
+	<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
 	<style>
 		html,body,.container{
 			width:100%;
@@ -36,7 +38,6 @@
 			this.font={
 				size:0,
 				color:'#0f0',
-				angle:0,
 				set:function(font,left,top){
 					font=(''+font).charAt();
 					self.ctx.fillStyle=this.color;
@@ -45,7 +46,7 @@
 					self.ctx.textBaseline="middle";
 					self.ctx.save();
 					self.ctx.translate(left,top);
-					self.ctx.rotate(this.angle);
+					self.ctx.rotate(self.isRotate?Math.PI/2:0);
 					self.ctx.fillText(font,0,0,this.size);
 					self.ctx.restore();
 					return this;
@@ -55,23 +56,37 @@
 					if(fonts.length){
 						var idx=-1,
 							step=10,
-							left=self.el.width/2,
-							top=self.el.height+this.size/2,
+							left,top,
 							_this=this;
-						self.clearTimer().timer=setInterval(function(){
-							idx++;
-							self.clear(true);
-							fonts.forEach(function(item,index){
-								_this.set(item,left,top+index*_this.size-step*idx);
-							});
-							if(top+fonts.length*_this.size-step*idx<=_this.size/2)
-								opts.repeat?(idx=-1):(self.clearTimer());
-						},25);
+						if(self.isRotate){
+							left=opts.width/2-this.size/16;
+							top=opts.height+this.size/2;
+							self.clearTimer().timer=setInterval(function(){
+								idx++;
+								self.clear(true);
+								fonts.forEach(function(item,index){
+									_this.set(item,left,top+index*_this.size-step*idx);
+								});
+								if(top+fonts.length*_this.size-step*idx<=_this.size/2)
+									opts.repeat?(idx=-1):(self.clearTimer());
+							},25);
+						}else{
+							left=opts.width+this.size/2;
+							top=opts.height/2+this.size/16;
+							self.clearTimer().timer=setInterval(function(){
+								idx++;
+								self.clear(true);
+								fonts.forEach(function(item,index){
+									_this.set(item,left+index*_this.size-step*idx,top);
+								});
+								if(left+fonts.length*_this.size-step*idx<=_this.size/2)
+									opts.repeat?(idx=-1):(self.clearTimer());
+							},25);
+						}
 					}
 					return this;
 				},
 				init:function(width,height){
-					width<height&&(this.angle=90*Math.PI/180);
 					this.size=Math.min(width,height)*.6;
 					return this;
 				}
@@ -82,20 +97,24 @@
 				self.clearTimer().timer=setInterval(function(){
 					self.clear();
 					if(++idx%40===0)
-						time--<=0?(self.clearTimer().clear(true),callback&&callback()):self.font.set(time+1,self.el.width/2,self.el.height/2);
+						time--<=0?(self.clearTimer().clear(true),callback&&callback()):self.font.set(time+1,self.el.width/2-(self.isRotate?self.font.size/16:0),self.el.height/2+(self.isRotate?0:self.font.size/16));
 				},25);
 			};
+			this.isRotate=false;
 			this.isInit=false;
 			this.init=function(){
 				if(opts.container){
 					var container=opts.container;
 					self.el.width=container.offsetWidth;
 					self.el.height=container.offsetHeight;
+					self.isRotate=self.el.width<self.el.height;
 					container.appendChild(self.el);
 					self.font.init(self.el.width,self.el.height);
 					self.init=true;
 					self.ready(function(){
 						self.font.slide(opts.fonts,{
+							width:self.el.width,
+							height:self.el.height,
 							repeat:opts.repeat
 						});
 					});
